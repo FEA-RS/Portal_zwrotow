@@ -9,6 +9,8 @@
 
 Asynchroniczny, produkcyjny system do obsługi zwrotów w e-commerce. Portal wykorzystuje **Semantic Router** (ChromaDB) do przechwytywania powtarzalnych zapytań i redukcji kosztów LLM, bezpośrednie odpytywanie **ChromaDB** dla logiki RAG (Regulamin Zwrotów), **LangGraph** do orkiestracji wielokrokowego procesu zbierania danych (Slot-Filling) oraz wbudowany mechanizm **Human-In-The-Loop (HITL)** do zatwierdzania nietypowych zgłoszeń przez administratora.
 
+Cały system działa jako deterministyczna maszyna stanów (LangGraph) — LLM jest wywoływany punktowo, wyłącznie do zadań ekstrakcji danych i formatowania tekstu, nigdy do samodzielnego decydowania o przepływie sterowania czy wykonywaniu zapytań do bazy/RAG (to zawsze bezpośrednie, deterministyczne wywołania funkcji Pythona).
+
 ---
 
 ## 🛠️ Stack Technologiczny
@@ -38,6 +40,36 @@ Asynchroniczny, produkcyjny system do obsługi zwrotów w e-commerce. Portal wyk
 
 ---
 
+## 📂 Struktura Projektu
+
+```
+app/
+├── main.py               # FastAPI: setup, lifespan (asyncpg pool + chroma client)
+├── config.py              # ustawienia z .env (klucze API, DSN)
+├── schemas.py              # modele Pydantic: request/response API + schemat ekstrakcji dla LLM
+├── router.py               # endpointy: /chat, /admin/tickets, /admin/tickets/{id}/resolve
+├── precheck.py              # deterministyczna detekcja numeru zamówienia (przed SemRouter)
+├── semantic_router.py         # embedding + porównanie dystansu w ChromaDB (static_intents)
+├── db/
+│   └── queries.py            # zapytania SQL (asyncpg), używane zarówno przez graf jak i /admin
+├── rag/
+│   └── policy_search.py        # bezpośrednie zapytania RAG do kolekcji return_policy
+├── graph/
+│   ├── state.py               # definicja stanu grafu (w tym licznik order_id_attempts)
+│   ├── nodes.py                # funkcje 4 węzłów
+│   └── builder.py               # budowa + kompilacja StateGraph z checkpointerem
+└── email/
+    └── template.py              # statyczny szablon + pole na uzasadnienie z LLM
+
+data/                       # surowe źródła do zaindeksowania (NIE dane runtime bazy)
+scripts/                     # jednorazowe skrypty operacyjne (np. ingest_policy.py)
+tests/                       # obsługiwane przez pyproject.toml
+```
+
+**Uwaga architektoniczna:** dostęp do danych w węzłach grafu (`app/db/`, `app/rag/`) jest zawsze bezpośrednim, deterministycznym wywołaniem funkcji — nigdy mechanizmem function-calling oddającym kontrolę modelowi. Każde wywołanie zewnętrznego zasobu (Postgres, ChromaDB, API LLM) musi mieć jawnie zaprojektowaną obsługę wyjątków. Logi aplikacji trafiają na stdout (brak dedykowanego folderu na logi w repozytorium — zob. `stan_projektu.md`, Decyzje architektoniczne).
+
+---
+
 ## 🏗️ Architektura Systemu
 
 ```mermaid
@@ -49,9 +81,6 @@ Asynchroniczny, produkcyjny system do obsługi zwrotów w e-commerce. Portal wyk
   }
 }}%%
 flowchart TD
-    %% ==========================================
-    %% WARSTWA STYLOWANIA
-    %% ==========================================
     classDef actorStyle fill:#475569,stroke:#334155,stroke-width:2px,color:#ffffff,font-weight:bold,font-size:14px;
     classDef apiStyle fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#ffffff,font-weight:bold,font-size:14px;
     classDef routerStyle fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#ffffff,font-weight:bold,font-size:14px;
@@ -60,40 +89,29 @@ flowchart TD
     classDef externalStyle fill:#ea580c,stroke:#c2410c,stroke-width:2px,color:#ffffff,font-weight:bold,font-size:14px;
     classDef hitlStyle fill:#e11d48,stroke:#be123c,stroke-width:2px,color:#ffffff,font-weight:bold,font-size:14px;
 
-    %% Aktorzy
     Client(["💻 Klient / Web Frontend"])
     Admin(["🛡️ Administrator / Backoffice"])
-
     class Client,Admin actorStyle;
 
-    %% ==========================================
-    %% WARSTWA API (FastAPI)
-    %% ==========================================
     subgraph API_Layer ["<span style='font-size:15px; font-weight:bold; color:#64748b;'>Warstwa API (FastAPI - Async + Pool)</span>"]
         style API_Layer fill:none,stroke:#0284c7,stroke-width:2px,stroke-dasharray: 5 5,rx:10px
         RouterChat("⚡ Endpoint: POST /chat")
-        RouterAdmin("⚡ Endpoint: POST /admin/tickets/{id}/resolve")
+        RouterAdmin("⚡ Endpointy: GET /admin/tickets<br/>POST /admin/tickets/{id}/resolve")
         PydanticVal("🛠️ Pydantic v2 Validation")
     end
-    
     class RouterChat,RouterAdmin,PydanticVal apiStyle;
 
-    %% ==========================================
-    %% WARSTWA FILTROWANIA SEMANTYCZNEGO
-    %% ==========================================
     subgraph Router_Layer ["<span style='font-size:15px; font-weight:bold; color:#64748b;'>Warstwa Cache / Semantic Routing</span>"]
         style Router_Layer fill:none,stroke:#16a34a,stroke-width:2px,stroke-dasharray: 5 5,rx:10px
+        PreCheck{"🔎 Pre-check: Numer Zamówienia?"}
         SemRouter{"🧠 Semantic Router"}
         EmbedModel("✨ Text Embedding Model BGE")
         DBVectorIntents[("📦 ChromaDB: static_intents")]
     end
-    
+    class PreCheck apiStyle;
     class SemRouter,EmbedModel routerStyle;
     class DBVectorIntents dbStyle;
 
-    %% ==========================================
-    %% WARSTWA ORKIESTRACJI AI
-    %% ==========================================
     subgraph Graph_Layer ["<span style='font-size:15px; font-weight:bold; color:#64748b;'>Warstwa Orkiestracji (LangGraph State Machine)</span>"]
         style Graph_Layer fill:none,stroke:#4f46e5,stroke-width:2px,stroke-dasharray: 5 5,rx:10px
         Graph("⛓️ LangGraph App")
@@ -101,55 +119,49 @@ flowchart TD
         NodeVal("🔍 Node: Walidacja & RAG")
         NodeHITL("⏳ Node: interrupt_before")
         NodeFinal("📧 Node: Finalizacja/Mail")
-        
         Graph --> NodeGather
         NodeGather --> NodeVal
         NodeVal --> NodeHITL
         NodeHITL -.->|Wznowienie wątku| NodeFinal
     end
-    
     class Graph,NodeGather,NodeVal,NodeFinal agentStyle;
     class NodeHITL hitlStyle;
 
-    %% ==========================================
-    %% WARSTWA DANYCH I PERSYSTENCJI
-    %% ==========================================
     subgraph DB_Layer ["<span style='font-size:15px; font-weight:bold; color:#64748b;'>Warstwa Danych (Data Persistence)</span>"]
         style DB_Layer fill:none,stroke:#9333ea,stroke-width:2px,stroke-dasharray: 5 5,rx:10px
         DBSQL[("🗄️ PostgreSQL + asyncpg Pool<br/>• Dane biznesowe & bilety")]
         DBCheckpoints[("💾 PostgreSQL: LangGraph Saver<br/>• Stan wątków / Checkpoints")]
         DBVectorDocs[("📦 ChromaDB: return_policy<br/>• Wektory regulaminu")]
     end
-    
     class DBSQL,DBCheckpoints,DBVectorDocs dbStyle;
 
-    %% Zewnętrzne API
     LLM[["🤖 Zewnętrzne API:<br/>OpenAI / Gemini / Claude"]]
     class LLM externalStyle;
 
-    %% ==========================================
-    %% PRZEPŁYWY DANYCH
-    %% ==========================================
-    Client -->|"1. Wysłanie wiadomości"| RouterChat
+    Client -->|"1. Wysłanie wiadomości (+ ticket_id jeśli kontynuacja)"| RouterChat
     RouterChat --> PydanticVal
-    PydanticVal --> SemRouter
-    
-    SemRouter <-->|"2. Generacja wektora"| EmbedModel
-    SemRouter <-->|"3. Szukanie dopasowania"| DBVectorIntents
-    
+    PydanticVal --> PreCheck
+
+    PreCheck -->|"Wzorzec numeru zamówienia obecny"| Graph
+    PreCheck -->|"Brak wzorca"| SemRouter
+
+    SemRouter <-->|"Generacja wektora"| EmbedModel
+    SemRouter <-->|"Szukanie dopasowania"| DBVectorIntents
+
     SemRouter -->|"Match < 0.25 (Cache Hit)"| Client
     SemRouter -->|"Match >= 0.25 (Cache Miss)"| Graph
 
-    Graph <-->|"4. Zmiana stanu / Tool Calling"| LLM
-    NodeVal <-->|"5a. Czysty SQL z asyncpg Pool"| DBSQL
-    NodeVal <-->|"5b. Direct ChromaDB RAG Search"| DBVectorDocs
-    Graph <-->|"6. Zapisywanie zrzutów pamięci"| DBCheckpoints
+    Graph <-->|"2. Zmiana stanu / Tool Calling (ekstrakcja)"| LLM
+    NodeVal <-->|"3a. Czysty SQL z asyncpg Pool"| DBSQL
+    NodeVal <-->|"3b. Direct ChromaDB RAG Search"| DBVectorDocs
+    Graph <-->|"4. Zapisywanie zrzutów pamięci"| DBCheckpoints
 
-    NodeHITL -.->|"7. Pauza i zapis statusu PENDING"| DBSQL
-    Admin -->|"8. Odczyt listy zgłoszeń"| DBSQL
-    Admin -->|"9. Zgoda/Odmowa + Notatka"| RouterAdmin
-    RouterAdmin -->|"10. graph.update_state()"| Graph
-    NodeFinal -->|"11. Wygenerowana odpowiedź"| Client
+    NodeHITL -.->|"5. Pauza i zapis statusu PENDING"| DBSQL
+    Admin -->|"6. GET /admin/tickets"| RouterAdmin
+    RouterAdmin <-->|"6a. SELECT WHERE status=PENDING"| DBSQL
+    Admin -->|"7. Zgoda/Odmowa + Notatka (POST resolve)"| RouterAdmin
+    RouterAdmin -->|"8. graph.update_state()"| Graph
+    NodeFinal -->|"9. Wygenerowany e-mail"| Client
 
     linkStyle default stroke:#94a3b8,stroke-width:2px;
 ```
