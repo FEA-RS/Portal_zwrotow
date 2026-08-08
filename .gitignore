@@ -1,0 +1,60 @@
+# =========================
+# Środowisko i sekrety
+# =========================
+# Środowiska wirtualne - nie chcemy wrzucać cudzego kodu
+venv/
+.venv/
+env/
+.env_venv/
+
+# Pliki ze zmiennymi środowiskowymi (TUTAJ SĄ HASŁA DO BAZY I API KEY, NIGDY NIE KOMITUJ!)
+.env
+.env.local
+.env.*
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# =========================
+# Narzędzia dev (Ruff, Mypy, Pytest)
+# =========================
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# =========================
+# Bazy danych i pliki RAG
+# =========================
+# Domyślne foldery dla lokalnej instancji ChromaDB
+chroma_data/
+chroma_db/
+# Inne pliki bazodanowe
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# IDE i OS
+# =========================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+
+# macOS / Windows śmieci systemowe
+.DS_Store
+Thumbs.db
