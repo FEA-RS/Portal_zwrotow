@@ -38,10 +38,10 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 ## 📝 Lista zadań (Checklista)
 
 ### 🛠️ Faza 1: Konfiguracja i Środowisko
-- [ ] Inicjalizacja repozytorium i struktury projektu (Python 3.12+).
-- [ ] Utworzenie szkieletu katalogów zgodnie z ustaloną strukturą: `app/`, `app/db/`, `app/rag/`, `app/graph/`, `app/email/`, `data/`, `scripts/`, `tests/` (zob. README.md, sekcja "Struktura Projektu").
-- [ ] Konfiguracja narzędzi do kontroli jakości kodu (Ruff, Mypy) w `pyproject.toml`.
-- [ ] Przygotowanie pliku `docker-compose.yml` uruchamiającego TYLKO usługi stanowe (PostgreSQL 16, ChromaDB) do lokalnego developmentu — aplikacja FastAPI uruchamiana lokalnie przez `uvicorn --reload`, bez kontenera na tym etapie.
+- [x] Inicjalizacja repozytorium i struktury projektu (Python 3.12+).
+- [x] Utworzenie szkieletu katalogów zgodnie z ustaloną strukturą: `app/`, `app/db/`, `app/rag/`, `app/graph/`, `app/email/`, `data/`, `scripts/`, `tests/` (zob. README.md, sekcja "Struktura Projektu").
+- [x] Konfiguracja narzędzi do kontroli jakości kodu (Ruff, Mypy) w `pyproject.toml`.
+- [x] Przygotowanie pliku `docker-compose.yml` uruchamiającego TYLKO usługi stanowe (PostgreSQL 16, ChromaDB) do lokalnego developmentu — aplikacja FastAPI uruchamiana lokalnie przez `uvicorn --reload`, bez kontenera na tym etapie.
 
 ### 🗄️ Faza 2: Bazy Danych i Persystencja
 - [ ] Utworzenie schematów i migracji dla relacyjnej bazy PostgreSQL (tabele biznesowe m.in. `orders`, `tickets`).
