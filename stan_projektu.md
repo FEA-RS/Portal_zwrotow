@@ -48,8 +48,8 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
   - [x] W `tickets`: kolumna identyfikatora pełni podwójną rolę jako `thread_id` (zob. Decyzje architektoniczne). Obowiązkowa kolumna na e-mail klienta (wymagana do finalizacji po HITL). Obowiązkowa kolumna statusu z wartościami min. `IN_PROGRESS`, `PENDING`, `RESOLVED`, `FAILED_DELIVERY` (zob. Decyzje architektoniczne — trwała awaria wysyłki).
 - [ ] Wdrożenie wektorowej bazy danych ChromaDB.
 - [ ] Utworzenie i zasilenie kolekcji ChromaDB:
-  - [ ] `static_intents` (na potrzeby Semantic Routera).
-  - [ ] `return_policy` (na potrzeby RAG i wektorów regulaminu zwrotów) — zasilana przez jednorazowy skrypt `scripts/ingest_policy.py`, czytający źródła z `data/`.
+  - [x] `static_intents` (na potrzeby Semantic Routera).
+  - [x] `return_policy` (na potrzeby RAG i wektorów regulaminu zwrotów) — zasilana przez jednorazowy skrypt `scripts/ingest_policy.py`, czytający źródła z `data/`.
 - [ ] Integracja checkpointera `AsyncPostgresSaver` dla zachowywania zserializowanych stanów grafu (LangGraph).
 
 ### 🌐 Faza 3: Warstwa API (Backend)
@@ -63,6 +63,7 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 - [ ] (Opcjonalnie, w razie potrzeby) Podstawowa konfiguracja loggera (`logging`) pisząca do stdout — NIE do pliku/folderu w repo (zob. Decyzje architektoniczne).
 
 ### 🧠 Faza 4: Inteligencja, Routing i Orkiestracja
+      Faza 4: obsługa pytań poza zakresem regulaminu — próg podobieństwa + jawna instrukcja dla modelu, by nie halucynować odpowiedzi z nietrafnych fragmentów". *KWESTIA DO ROZWAŻENIA W KONTEKŚCIE TEGO JAK ODPOWIADA CHAT NA PYTANIA SPOZA REGULAMINU*
 - [ ] ⚠️ **Uzupełnić i spisać pełną listę dozwolonych "standardowych" powodów zwrotu** — wymagane przed implementacją reguł kwalifikacji poniżej.
 - [ ] **Pre-check numeru zamówienia (przed routerem):**
   - [ ] Implementacja deterministycznej funkcji wykrywającej wzorzec numeru zamówienia w treści wiadomości klienta.
