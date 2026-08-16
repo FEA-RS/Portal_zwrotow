@@ -63,6 +63,7 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 - [ ] (Opcjonalnie, w razie potrzeby) Podstawowa konfiguracja loggera (`logging`) pisząca do stdout — NIE do pliku/folderu w repo (zob. Decyzje architektoniczne).
 
 ### 🧠 Faza 4: Inteligencja, Routing i Orkiestracja
+      Faza 4: obsługa pytań poza zakresem regulaminu — próg podobieństwa + jawna instrukcja dla modelu, by nie halucynować odpowiedzi z nietrafnych fragmentów". *KWESTIA DO ROZWAŻENIA W KONTEKŚCIE TEGO JAK ODPOWIADA CHAT NA PYTANIA SPOZA REGULAMINU*
 - [ ] ⚠️ **Uzupełnić i spisać pełną listę dozwolonych "standardowych" powodów zwrotu** — wymagane przed implementacją reguł kwalifikacji poniżej.
 - [ ] **Pre-check numeru zamówienia (przed routerem):**
   - [ ] Implementacja deterministycznej funkcji wykrywającej wzorzec numeru zamówienia w treści wiadomości klienta.
