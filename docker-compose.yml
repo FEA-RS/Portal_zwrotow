@@ -26,7 +26,7 @@ services:
   chromadb:
     image: "chromadb/chroma:1.5.9"
     restart: unless-stopped
-    ports:
+    ports:  
         - "8000:8000"
     healthcheck:
       test: ["CMD", "/bin/bash", "-c", "echo > /dev/tcp/localhost/8000"]

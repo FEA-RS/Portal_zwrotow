@@ -44,9 +44,8 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 - [x] Przygotowanie pliku `docker-compose.yml` uruchamiającego TYLKO usługi stanowe (PostgreSQL 16, ChromaDB) do lokalnego developmentu — aplikacja FastAPI uruchamiana lokalnie przez `uvicorn --reload`, bez kontenera na tym etapie.
 
 ### 🗄️ Faza 2: Bazy Danych i Persystencja
-- [ ] Utworzenie schematów i migracji dla relacyjnej bazy PostgreSQL (tabele biznesowe m.in. `orders`, `tickets`).
-  - [ ] W `tickets`: kolumna identyfikatora pełni podwójną rolę jako `thread_id` (zob. Decyzje architektoniczne). Obowiązkowa kolumna na e-mail klienta (wymagana do finalizacji po HITL). Obowiązkowa kolumna statusu z wartościami min. `IN_PROGRESS`, `PENDING`, `RESOLVED`, `FAILED_DELIVERY` (zob. Decyzje architektoniczne — trwała awaria wysyłki).
-- [ ] Konfiguracja puli połączeń (`asyncpg.Pool`) podpiętej pod cykl życia aplikacji (lifespan) FastAPI — z krótkim retry na wypadek wyścigu startowego kontenerów (zob. Decyzje architektoniczne).
+- [x] Utworzenie schematów i migracji dla relacyjnej bazy PostgreSQL (tabele biznesowe m.in. `orders`, `tickets`).
+  - [x] W `tickets`: kolumna identyfikatora pełni podwójną rolę jako `thread_id` (zob. Decyzje architektoniczne). Obowiązkowa kolumna na e-mail klienta (wymagana do finalizacji po HITL). Obowiązkowa kolumna statusu z wartościami min. `IN_PROGRESS`, `PENDING`, `RESOLVED`, `FAILED_DELIVERY` (zob. Decyzje architektoniczne — trwała awaria wysyłki).
 - [ ] Wdrożenie wektorowej bazy danych ChromaDB.
 - [ ] Utworzenie i zasilenie kolekcji ChromaDB:
   - [ ] `static_intents` (na potrzeby Semantic Routera).
@@ -55,6 +54,7 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 
 ### 🌐 Faza 3: Warstwa API (Backend)
 - [ ] Uruchomienie szkieletu aplikacji FastAPI (uruchamianej lokalnie przez `uvicorn --reload`).
+- [ ] Konfiguracja puli połączeń (`asyncpg.Pool`) podpiętej pod cykl życia aplikacji (lifespan) FastAPI — z krótkim retry na wypadek wyścigu startowego kontenerów (zob. Decyzje architektoniczne).
 - [ ] Przygotowanie modeli w Pydantic v2 (`app/schemas.py`) do rygorystycznej walidacji (format `order_id`, format e-maila, parsowanie JSON) — reużywanych jako schemat ekstrakcji danych dla LLM w węźle Zbieranie Danych.
 - [ ] Implementacja głównego endpointu dla klientów: `POST /chat`. Kontrakt: opcjonalne pole `ticket_id` w request body — brak = pierwsza wiadomość (tworzy ticket), obecność = kontynuacja rozmowy.
 - [ ] Implementacja endpointu dla administratora do listowania zgłoszeń: `GET /admin/tickets` (domyślnie status `PENDING`, z możliwością filtrowania — w tym po `FAILED_DELIVERY`).
