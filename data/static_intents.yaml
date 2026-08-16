@@ -1,0 +1,167 @@
+# static_intents.yaml
+#
+# Cel: cache dla pytań GENERYCZNYCH — takich, które nie wymagają sprawdzenia
+# konkretnego zamówienia w SQL. Jeśli pytanie klienta jest semantycznie blisko
+# jednej z fraz w `examples`, system odpowiada od razu tekstem z
+# `canonical_answer` — Z POMINIĘCIEM grafu i LLM. To jest sedno Semantic
+# Routera: redukcja kosztów.
+#
+# Konsekwencja tej definicji (nie szczegół, tylko fundament):
+# `canonical_answer_ref` to WSKAŹNIK do sekcji regulaminu, do celów
+# audytowych/spójności — nie jest to tekst do wysłania klientowi.
+# `canonical_answer` to jedyne pole, które faktycznie trafia do czatu przy
+# cache hicie. Musi być gotowym, samodzielnym zdaniem — nikt (żaden LLM) nie
+# przetworzy go dalej na tej ścieżce. Jeśli tu jest puste, cache hit nie ma
+# czego wysłać.
+#
+# Dwa poziomy tej samej funkcji (nie duplikacja):
+#   - cache hit (ten plik):        zero LLM, zero grafu, wymaga gotowego tekstu
+#   - cache miss -> graf -> RAG:   LLM formatuje odpowiedź z fragmentu
+#                                   regulaminu w locie — tu koszt LLM jest
+#                                   akceptowalny, bo i tak wchodzimy do grafu
+#
+# Twarda zasada (spójna z pre-checkiem z Fazy 4):
+# ŻADNA fraza w `examples` nie może zawierać ani sugerować odniesienia do
+# konkretnego numeru zamówienia, kwoty, daty zakupu czy statusu przesyłki
+# KONKRETNEGO zamówienia klienta.
+
+intents:
+
+  # --- Small talk / powitania ---
+  - id: greeting_generic
+    category: greeting
+    canonical_answer_ref: null
+    canonical_answer: >
+      Cześć! Jestem agentem do spraw zwrotów. W czym mogę pomóc? Jeśli masz pytanie o zwrot zamówienia,
+      chętnie pomogę.
+    examples:
+      - "Cześć"
+      - "Dzień dobry"
+      - "Hej, jest tam ktoś?"
+      - "Witam"
+      - "siema"
+      - "Dzień dobry, mam pytanie"
+      - "halo?"
+      - "Cześć, mam na imię"
+
+  - id: farewell_thanks
+    category: farewell
+    canonical_answer_ref: null
+    canonical_answer: >
+      Cieszę się, że mogłem pomóc! Jeśli będziesz mieć jeszcze jakieś
+      pytania, śmiało pisz.
+    examples:
+      - "Dziękuję, to wszystko"
+      - "Ok dzięki"
+      - "Super, dziękuję za pomoc"
+      - "Do widzenia"
+      - "Dzięki wielkie"
+
+  # --- §1: termin zgłoszenia zwrotu ---
+  - id: policy_return_deadline
+    category: policy
+    canonical_answer_ref: "regulamin#§1"
+    canonical_answer: >
+      Zwrot możesz zgłosić w ciągu 14 dni od daty zakupu.
+    examples:
+      - "Ile mam czasu na zwrot?"
+      - "ile dni na zwrot towaru"
+      - "Do kiedy mogę zgłosić zwrot?"
+      - "Czy mogę zwrócić coś co kupiłem miesiąc temu?"
+      - "jaki jest termin na zwrot"
+
+  # --- §2: próg kwotowy automatycznej realizacji (jawny) ---
+  - id: policy_refund_threshold
+    category: policy
+    canonical_answer_ref: "regulamin#§2"
+    canonical_answer: >
+      Zwroty zamówień do 600 zł realizujemy automatycznie. Powyżej tej
+      kwoty zgłoszenie trafia do ręcznej weryfikacji przez nasz zespół —
+      to nie oznacza odmowy, tylko dodatkowe sprawdzenie.
+    examples:
+      - "Czy jest jakiś limit kwoty na automatyczny zwrot?"
+      - "do jakiej kwoty zwrot jest od razu akceptowany"
+      - "Kupiłem coś drogiego, czy zwrot będzie szybszy jeśli to tania rzecz?"
+      - "czy zwrot drogiego zamówienia jest od razu"
+
+  # --- §3: dozwolone powody zwrotu ---
+  - id: policy_return_reasons
+    category: policy
+    canonical_answer_ref: "regulamin#§3"
+    canonical_answer: >
+      Zwrot możesz zgłosić m.in. gdy produkt jest niezgodny z zamówieniem,
+      uszkodzony, wadliwy, ma zły rozmiar lub kolor, jest niekompletny albo
+      niezgodny z opisem — a także jeśli po prostu chcesz odstąpić od
+      umowy bez podania przyczyny. Jeśli chcesz, mogę podać pełną listę.
+    examples:
+      - "Jakie są powody, dla których mogę zwrócić produkt?"
+      - "za co mozna zrobic zwrot"
+      - "Czy mogę zwrócić produkt bez podania przyczyny?"
+      - "Czy zwrot 'bo mi się nie podoba' jest możliwy?"
+
+  # --- §4: status przesyłki jako warunek ---
+  - id: policy_shipping_status_condition
+    category: policy
+    canonical_answer_ref: "regulamin#§4"
+    canonical_answer: >
+      Zwrot możemy przyjąć automatycznie dopiero po tym, jak paczka
+      zostanie do Ciebie doręczona. Jeśli zamówienie jest jeszcze w
+      drodze, zgłoszenie trafi do ręcznej weryfikacji przez nasz zespół.
+    examples:
+      - "Czy mogę zrobić zwrot zanim dostanę paczkę?"
+      - "czy da się zwrocic cos co jeszcze jedzie do mnie"
+      - "Zamówienie jeszcze nie dotarło, czy mogę już zgłosić zwrot?"
+
+  # --- §5: weryfikacja i zwrot środków ---
+  - id: policy_refund_process
+    category: policy
+    canonical_answer_ref: "regulamin#§5"
+    canonical_answer: >
+      Po zaakceptowaniu zwrotu i weryfikacji odesłanego produktu pieniądze
+      wracają tą samą metodą płatności, którą zapłaciłeś/aś za zamówienie,
+      w ciągu do 14 dni roboczych od akceptacji zwrotu.
+    examples:
+      - "Jak długo czekam na zwrot pieniędzy?"
+      - "kiedy dostane kase z powrotem"
+      - "W jaki sposób zostaną zwrócone pieniądze?"
+      - "Czy pieniądze wrócą na tę samą kartę, którą płaciłem?"
+
+  # --- §6: co się dzieje, gdy zgłoszenie nie kwalifikuje się automatycznie ---
+  - id: policy_manual_review_explainer
+    category: policy
+    canonical_answer_ref: "regulamin#§6"
+    canonical_answer: >
+      Jeśli Twoje zgłoszenie nie spełnia warunków automatycznej realizacji
+      (np. ze względu na kwotę, termin lub powód zwrotu), nie oznacza to
+      odmowy — sprawę ręcznie sprawdzi nasz zespół obsługi klienta.
+    examples:
+      - "Co się stanie, jeśli mój zwrot nie zostanie zaakceptowany automatycznie?"
+      - "czy ktoś sprawdza moje zgłoszenie recznie"
+      - "Dlaczego mój zwrot nie został od razu zatwierdzony?"
+
+# --- Decyzje podjęte (dla pamięci, nie do zmiany bez rozmowy) ---
+#
+# 1) Small talk (greeting/farewell) i policy zostają W JEDNEJ kolekcji.
+#    Powód: dopasowanie semantyczne działa identycznie dla obu typów, różnica
+#    jest tylko w obsłudze PO trafieniu (branch po polu `category` /
+#    `canonical_answer_ref` w kodzie aplikacji, nie w samej bazie wektorowej).
+#    Rozdział na osobne kolekcje wraca do rozważenia tylko jeśli ewaluacja
+#    pokaże realne kolizje semantyczne między kategoriami — nie wcześniej.
+#
+# 2) "Jak zrobić zwrot?" / "chcę zwrócić produkt" — CELOWO NIE jest intencją
+#    w tej kolekcji. To realnie start zgłoszenia zwrotu (wymaga numeru
+#    zamówienia), więc ma zawsze iść pełnym flow przez graf, nie przez cache.
+#
+# 3) Próg kwotowy 600 zł (§2) — JEST jawny, ma własną intencję
+#    (policy_refund_threshold) z gotową odpowiedzią. Decyzja odwrócona
+#    względem poprzedniej iteracji tego pliku.
+#
+# 4) `canonical_answer` trzymany INLINE, obok `canonical_answer_ref`, w tym
+#    samym pliku — nie w osobnym mapowaniu. Powód: przy kilkunastu unikalnych,
+#    nie-reużywanych odpowiedziach koszt drugiego punktu prawdy (ryzyko
+#    rozjazdu / brakującego wpisu wykrywanego dopiero w runtime) przewyższa
+#    korzyść z rozdzielenia. Rewizja tej decyzji ma sens dopiero, gdy jedna
+#    odpowiedź zacznie być reużywana przez wiele intencji.
+#    RYZYKO OPERACYJNE: `canonical_answer` NIE synchronizuje się automatycznie
+#    ze zmianami w regulamin_zwrotow.md — każda zmiana regulaminu wymaga
+#    ręcznego przeglądu tego pliku pod kątem nieaktualnych odpowiedzi.

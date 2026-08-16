@@ -48,8 +48,8 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
   - [x] W `tickets`: kolumna identyfikatora pełni podwójną rolę jako `thread_id` (zob. Decyzje architektoniczne). Obowiązkowa kolumna na e-mail klienta (wymagana do finalizacji po HITL). Obowiązkowa kolumna statusu z wartościami min. `IN_PROGRESS`, `PENDING`, `RESOLVED`, `FAILED_DELIVERY` (zob. Decyzje architektoniczne — trwała awaria wysyłki).
 - [ ] Wdrożenie wektorowej bazy danych ChromaDB.
 - [ ] Utworzenie i zasilenie kolekcji ChromaDB:
-  - [ ] `static_intents` (na potrzeby Semantic Routera).
-  - [ ] `return_policy` (na potrzeby RAG i wektorów regulaminu zwrotów) — zasilana przez jednorazowy skrypt `scripts/ingest_policy.py`, czytający źródła z `data/`.
+  - [x] `static_intents` (na potrzeby Semantic Routera).
+  - [x] `return_policy` (na potrzeby RAG i wektorów regulaminu zwrotów) — zasilana przez jednorazowy skrypt `scripts/ingest_policy.py`, czytający źródła z `data/`.
 - [ ] Integracja checkpointera `AsyncPostgresSaver` dla zachowywania zserializowanych stanów grafu (LangGraph).
 
 ### 🌐 Faza 3: Warstwa API (Backend)
