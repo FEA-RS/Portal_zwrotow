@@ -24,7 +24,7 @@ dependencies = [
     "tenacity==8.3.0"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 # Zależności deweloperskie
 dev = [
     "ruff",
