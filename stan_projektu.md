@@ -73,6 +73,7 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 
 ### 🧠 Faza 4: Inteligencja, Routing i Orkiestracja
       Faza 4: obsługa pytań poza zakresem regulaminu — próg podobieństwa + jawna instrukcja dla modelu, by nie halucynować odpowiedzi z nietrafnych fragmentów". *KWESTIA DO ROZWAŻENIA W KONTEKŚCIE TEGO JAK ODPOWIADA CHAT NA PYTANIA SPOZA REGULAMINU*
+- [ ] **Skonfigurować GitHub Actions (CI) — odroczone świadomie do tego momentu.** Uruchamianie `ruff check`, `mypy` i `pytest` przy każdym pushu/PR. Celowo NIE zrobione wcześniej (Faza 2-3) — bez realnego kodu aplikacyjnego i testów w `tests/`, CI weryfikowałoby pusty projekt, dając fałszywe poczucie bezpieczeństwa bez faktycznej ochrony. Ma sens dopiero od momentu, gdy istnieje pierwszy testowalny fragment logiki (start Fazy 4). Workflow musi jawnie używać właściwej grupy zależności (`[dependency-groups]`, zob. sekcja zarządzania środowiskiem) — nie gołego `uv sync` bez flag, inaczej `ruff`/`mypy`/`pytest` nie będą fizycznie obecne w środowisku CI.
 - [x] ⚠️ **Uzupełnić i spisać pełną listę dozwolonych "standardowych" powodów zwrotu** — wymagane przed implementacją reguł kwalifikacji poniżej.
 - [ ] **Pre-check numeru zamówienia (przed routerem):**
   - [ ] Implementacja deterministycznej funkcji wykrywającej wzorzec numeru zamówienia w treści wiadomości klienta.
