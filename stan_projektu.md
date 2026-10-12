@@ -72,7 +72,7 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 
 ### 🗄️ Faza 2: Bazy Danych i Persystencja
 - [ ] Utworzenie schematów i migracji dla relacyjnej bazy PostgreSQL (Alembic, tabele biznesowe `orders`, `tickets`). Definicja "zrobione": pierwsza migracja odtwarzalna od zera jedną komendą, zastępuje `scripts/create_table.sql`.
-  - [ ] Inicjalizacja Alembica (folder `migrations/`, `env.py` z adresem `postgresql+psycopg://`, tabele checkpointera wykluczone z migracji).
+  - [ ] Inicjalizacja Alembica (`alembic init alembic` — domyślna nazwa folderu, `env.py` z adresem `postgresql+psycopg://`, tabele checkpointera wykluczone z migracji).
   - [ ] W `orders`: `shipped_status NOT NULL DEFAULT 'UNSENT'`, `delivered_at` (TIMESTAMPTZ) z CHECK: `DELIVERED` wymaga daty.
   - [ ] W `tickets`: kolumna identyfikatora pełni podwójną rolę jako `thread_id` (zob. Decyzje architektoniczne). `return_status NOT NULL`, kolumna e-maila nullable z CHECK (poza `IN_PROGRESS` e-mail wymagany, wymagany do finalizacji po HITL). Statusy: `IN_PROGRESS`, `PENDING`, `PROCESSING_RESOLUTION`, `RESOLVED`, `FAILED_DELIVERY` (zob. Decyzje architektoniczne — trwała awaria wysyłki).
   - [ ] Test migracji: czysta baza → `upgrade` → `downgrade` → `upgrade`.

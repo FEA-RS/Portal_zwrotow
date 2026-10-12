@@ -64,7 +64,11 @@ app/
 └── email/
     └── template.py              # statyczny szablon + pole na uzasadnienie z LLM
 
-migrations/                 # migracje Alembic (tabele biznesowe, bez tabel checkpointera)
+alembic.ini                 # konfiguracja Alembica (generowana przez `alembic init alembic`)
+alembic/                    # migracje (tabele biznesowe, bez tabel checkpointera)
+├── env.py                    # połączenie z bazą (postgresql+psycopg://)
+└── versions/                  # pliki migracji
+
 data/                       # surowe źródła do zaindeksowania (NIE dane runtime bazy)
 scripts/                     # jednorazowe skrypty operacyjne (np. ingest_policy.py)
 tests/                       # obsługiwane przez pyproject.toml
