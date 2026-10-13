@@ -62,7 +62,7 @@ intents:
     category: policy
     canonical_answer_ref: "regulamin#§1"
     canonical_answer: >
-      Zwrot możesz zgłosić w ciągu 14 dni od daty zakupu.
+      Zwrot możesz zgłosić w ciągu 14 od dnia doręczenia produktu.
     examples:
       - "Ile mam czasu na zwrot?"
       - "ile dni na zwrot towaru"
