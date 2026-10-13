@@ -59,8 +59,8 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 
 - **Uruchamianie na Windowsie.** psycopg async wymaga `SelectorEventLoop`: `uvicorn app.main:app --reload --loop asyncio:SelectorEventLoop` (do przetestowania z `--reload`).
 
+- **Czas odpowiedzi przy weryfikacji manualnej.** : obietnica „nie później niż 2 dni robocze od przekazania zgłoszenia” jest zapisana w regulamin.md §6 (źródło prawdy dla klienta i RAG), a kod trzyma tę samą wartość jako jedną stałą konfiguracyjną używaną w szablonie maila. Powód: spójność odpowiedzi czatbota (RAG/cache) z mailem. Ryzyko: dwa miejsca do utrzymania; zmiana wartości wymaga ręcznego przeglądu regulamin.md, static_intents.yaml i konfiguracji.
 
----
 
 ## 📝 Lista zadań (Checklista)
 
