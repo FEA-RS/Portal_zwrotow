@@ -2,7 +2,7 @@
 
 ## §1. Termin zgłoszenia zwrotu
 
-Zgłoszenie zwrotu produktu można złożyć w terminie 14 dni od dnia doręczenia produktu. Termin liczony jest jako 14 pełnych dni kalendarzowych, licząc od dnia następującego po dacie zakupu. Zgłoszenia złożone po upływie tego terminu nie podlegają automatycznej kwalifikacji i są rozpatrywane indywidualnie przez zespół obsługi klienta.
+Zgłoszenie zwrotu produktu można złożyć w terminie 14 dni od dnia doręczenia produktu. Termin liczony jest jako 14 pełnych dni kalendarzowych, po dniu doręczenia zakupu. Zgłoszenia złożone po upływie tego terminu nie podlegają automatycznej kwalifikacji i są rozpatrywane indywidualnie przez zespół obsługi klienta.
 
 ## §2. Warunki automatycznej realizacji zwrotu
 
