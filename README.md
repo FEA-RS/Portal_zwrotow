@@ -146,7 +146,7 @@ Pierwsza migracja Alembika zastępuje dotychczasowy `scripts/create_table.sql`. 
 
 - **Szablon e-maila finalizującego** ma być statyczny (stała struktura), LLM wypełnia wyłącznie pole z uzasadnieniem decyzji — nie generuje całej wiadomości od zera.
 
-- **Idempotencja wysyłki e-maila (`Node: Finalizacja/Mail`).** Wywołanie LLM po tekst uzasadnienia jest bezstanowe i bezpieczne do retry. Faktyczna wysyłka e-maila NIE jest bezpiecznie retry'owalna wprost (ryzyko podwójnej wysyłki tej samej decyzji do klienta) — przed wysyłką węzeł sprawdza aktualny status ticketu w Postgresie; jeśli już `RESOLVED`, pomija ponowną wysyłkę. Status aktualizowany na `RESOLVED` dopiero PO potwierdzonym sukcesie wysyłki, nigdy przed. Status `PROCESSING_RESOLUTION` oznacza stan między wysyłką a zapisem i wymaga tej samej ochrony.
+- **Idempotencja wysyłki e-maila (`Node: Finalizacja/Mail`).** Wywołanie LLM po tekst uzasadnienia jest bezstanowe i bezpieczne do retry. Faktyczna wysyłka e-maila NIE jest bezpiecznie retry'owalna wprost (ryzyko podwójnej wysyłki tej samej decyzji do klienta) — przed wysyłką węzeł sprawdza aktualny status ticketu w Postgresie; jeśli już `RESOLVED`, pomija ponowną wysyłkę. Status aktualizowany na `RESOLVED` dopiero PO potwierdzonym sukcesie wysyłki, nigdy przed. Status `PROCESSING_RESOLUTION` jest ustawiany przez endpoint przed startem zadania w tle (blokada), więc w tym stanie węzeł zakłada, że ticket jest jego. Ochrona przed podwójną wysyłką dotyczy przejścia do RESOLVED.
 
 - **Trwała awaria wysyłki po zatwierdzeniu przez admina.** Jeśli generowanie uzasadnienia lub wysyłka maila ostatecznie zawiedzie mimo wyczerpania prób retry, ticket NIE wraca automatycznie do kolejki `PENDING` (myliłoby to admina, sugerując nowe zgłoszenie do oceny, i mogłoby tworzyć pętlę przy trwałej awarii). Zamiast tego przyjmuje osobny status `FAILED_DELIVERY`, wymagający ręcznego ponowienia po stronie admina/operatora po ustaniu przyczyny awarii infrastruktury.
 
@@ -160,16 +160,25 @@ Pierwsza migracja Alembika zastępuje dotychczasowy `scripts/create_table.sql`. 
 
 - **Uruchamianie lokalne na Windowsie.** psycopg async wymaga `SelectorEventLoop`, a domyślna pętla Windowsa to `ProactorEventLoop`. Lokalny start: `uvicorn app.main:app --reload --loop asyncio:SelectorEventLoop` (do przetestowania z `--reload`). Obejście przez `asyncio.set_event_loop_policy` przestało działać od uvicorn 0.36. Linux i Docker nie wymagają tej flagi.
 
+- **Decyzja: blokada /resolve przez atomowe przejęcie ticketu w endpoincie.** : Endpoint zmienia status z PENDING na PROCESSING_RESOLUTION jednym warunkowym UPDATE (WHERE id = ... AND return_status = 'PENDING') i sprawdza liczbę zmienionych wierszy. 1 wiersz oznacza, że żądanie wygrało: startuje zadanie w tle (BackgroundTasks), odpowiedź 202. 0 wierszy oznacza przegraną: brak zadania w tle, odpowiedź 409. Zapis i sprawdzenie warunku w jednym zapytaniu eliminuje lukę TOCTOU między SELECT a UPDATE. Przejęcie robi endpoint, a nie graf, żeby przegrany klient od razu dostał jednoznaczną odpowiedź HTTP. NodeFinal zakłada, że ticket jest już w PROCESSING_RESOLUTION, i sam kończy go na RESOLVED albo FAILED_DELIVERY. retry-mail używa tego samego mechanizmu z oczekiwanym stanem FAILED_DELIVERY.
+
+
 ---
 
 ## ⚠️ Technical Debt & Known Limitations
 
-- **Brak wykrywania porzuconych stanów pośrednich.** Dwie kategorie rekordów mogą bezterminowo utknąć bez automatycznej reakcji systemu:
-  - (a) `PROCESSING_RESOLUTION` — proces padł między wysyłką e-maila a zapisem statusu;
-  - (b) `IN_PROGRESS` — klient porzucił rozmowę przed skompletowaniem slotów, np. nie podał e-maila po eskalacji licznika prób lub odpowiadał czymś, co nie jest adresem.
+*   **Brak wykrywania porzuconych stanów pośrednich i brak auto-recovery.** Dwie kategorie rekordów mogą bezterminowo utknąć bez automatycznej reakcji systemu:
+    *   **(a) `PROCESSING_RESOLUTION`:** proces padł między wysyłką e-maila a zapisem statusu (lub między przejęciem ticketu a zakończeniem zadania w tle). Ticket zostaje w tym stanie i wymaga ręcznej interwencji.
+    *   **(b) `IN_PROGRESS`:** klient porzucił rozmowę przed skompletowaniem slotów, np. nie podał e-maila po eskalacji licznika prób lub odpowiadał czymś, co nie jest adresem.
 
-  Zaprojektowane, niezaimplementowane rozwiązanie: kolumna znacznika czasu ostatniej aktywności na `tickets` oraz okresowy skan tabeli (np. przy starcie aplikacji w `lifespan`). Reakcja różni się per kategoria: `PROCESSING_RESOLUTION` po przekroczeniu progu kwalifikuje się do ponowienia (dane są kompletne, to awaria procesu); `IN_PROGRESS` po przekroczeniu dłuższego progu jest oznaczany nowym statusem wygaśnięcia (dane nigdy nie były kompletne, nie ma czego wznawiać) — wymaga rozszerzenia enuma. Świadomie odłożone na rzecz dowiezienia kluczowej wartości biznesowej (Faza 4). Dodanie kolumny to zwykła migracja Alembika.
+    > **Zaprojektowane rozwiązanie:**
+    > Dodanie kolumny znacznika czasu ostatniej aktywności w tabeli `tickets` oraz okresowy skan tabeli (np. przy starcie aplikacji w `lifespan`). Reakcja różni się w zależności od kategorii:
+    > *   `PROCESSING_RESOLUTION` – po przekroczeniu progu kwalifikuje się do ponowienia (dane są kompletne, to awaria procesu).
+    > *   `IN_PROGRESS` – po przekroczeniu dłuższego progu jest oznaczany nowym statusem wygaśnięcia (dane nigdy nie były kompletne, nie ma czego wznawiać), co wymaga rozszerzenia enuma.
+    > 
+    > *Status:* Świadomie odłożone na rzecz dowiezienia kluczowej wartości biznesowej (Faza 4). Dodanie kolumny to zwykła migracja Alembika.
 
+*   **Założenie jednego administratora.** System zakłada jednego admina obsługującego kolejkę. Śledzenie, kto pracuje nad którym ticketem (dodatkowa kolumna przypisania lub użycie `FOR UPDATE SKIP LOCKED` dla mechanizmu „weź następny”), pozostaje poza zakresem projektu.
 ---
 
 ## 🏗️ Architektura Systemu

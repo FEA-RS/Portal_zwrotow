@@ -61,6 +61,9 @@ Stworzenie asynchronicznego, produkcyjnego systemu do obsługi zwrotów w e-comm
 
 - **Czas odpowiedzi przy weryfikacji manualnej.** : obietnica „nie później niż 2 dni robocze od przekazania zgłoszenia” jest zapisana w regulamin.md §6 (źródło prawdy dla klienta i RAG), a kod trzyma tę samą wartość jako jedną stałą konfiguracyjną używaną w szablonie maila. Powód: spójność odpowiedzi czatbota (RAG/cache) z mailem. Ryzyko: dwa miejsca do utrzymania; zmiana wartości wymaga ręcznego przeglądu regulamin.md, static_intents.yaml i konfiguracji.
 
+- **Decyzja: blokada /resolve przez atomowe przejęcie ticketu w endpoincie.** : Endpoint zmienia status z PENDING na PROCESSING_RESOLUTION jednym warunkowym UPDATE (WHERE id = ... AND return_status = 'PENDING') i sprawdza liczbę zmienionych wierszy. 1 wiersz oznacza, że żądanie wygrało: startuje zadanie w tle (BackgroundTasks), odpowiedź 202. 0 wierszy oznacza przegraną: brak zadania w tle, odpowiedź 409. Zapis i sprawdzenie warunku w jednym zapytaniu eliminuje lukę TOCTOU między SELECT a UPDATE. Przejęcie robi endpoint, a nie graf, żeby przegrany klient od razu dostał jednoznaczną odpowiedź HTTP. NodeFinal zakłada, że ticket jest już w PROCESSING_RESOLUTION, i sam kończy go na RESOLVED albo FAILED_DELIVERY. retry-mail używa tego samego mechanizmu z oczekiwanym stanem FAILED_DELIVERY.
+
+
 
 ## 📝 Lista zadań (Checklista)
 
