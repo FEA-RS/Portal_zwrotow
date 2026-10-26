@@ -45,13 +45,7 @@ dev = [
 # Główne ustawienia lintera i formattera
 line-length = 88
 target-version = "py312"
-exclude = [
-    ".git",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    "venv",
-]
+
 
 [tool.ruff.lint]
 # E (pycodestyle), F (pyflakes), I (isort) - standardowy i bezpieczny zestaw reguł
@@ -76,7 +70,6 @@ ignore_missing_imports = true
 # Ignorowanie brakujących typów z bibliotek trzecich
 [[tool.mypy.overrides]]
 module = [
-    "asyncpg.*",
     "chromadb.*",
     "langgraph.*"
 ]
