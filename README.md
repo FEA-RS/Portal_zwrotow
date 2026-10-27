@@ -167,18 +167,13 @@ Pierwsza migracja Alembika zastępuje dotychczasowy `scripts/create_table.sql`. 
 
 ## ⚠️ Technical Debt & Known Limitations
 
-*   **Brak wykrywania porzuconych stanów pośrednich i brak auto-recovery.** Dwie kategorie rekordów mogą bezterminowo utknąć bez automatycznej reakcji systemu:
-    *   **(a) `PROCESSING_RESOLUTION`:** proces padł między wysyłką e-maila a zapisem statusu (lub między przejęciem ticketu a zakończeniem zadania w tle). Ticket zostaje w tym stanie i wymaga ręcznej interwencji.
-    *   **(b) `IN_PROGRESS`:** klient porzucił rozmowę przed skompletowaniem slotów, np. nie podał e-maila po eskalacji licznika prób lub odpowiadał czymś, co nie jest adresem.
+- **Brak wykrywania porzuconych stanów pośrednich i brak auto-recovery.** Dwie kategorie rekordów mogą bezterminowo utknąć bez automatycznej reakcji systemu:
+  - (a) `PROCESSING_RESOLUTION` — proces padł między wysyłką e-maila a zapisem statusu (lub między przejęciem ticketu a zakończeniem zadania w tle). Ticket zostaje w tym stanie i wymaga ręcznej interwencji. Kolejne wywołanie `/resolve` na takim tickecie dostaje 409 (warunkowy UPDATE zmienia 0 wierszy), więc blokada wstrzymuje także ręczną próbę admina;
+  - (b) `IN_PROGRESS` — klient porzucił rozmowę przed skompletowaniem slotów, np. nie podał e-maila po eskalacji licznika prób lub odpowiadał czymś, co nie jest adresem.
 
-    > **Zaprojektowane rozwiązanie:**
-    > Dodanie kolumny znacznika czasu ostatniej aktywności w tabeli `tickets` oraz okresowy skan tabeli (np. przy starcie aplikacji w `lifespan`). Reakcja różni się w zależności od kategorii:
-    > *   `PROCESSING_RESOLUTION` – po przekroczeniu progu kwalifikuje się do ponowienia (dane są kompletne, to awaria procesu).
-    > *   `IN_PROGRESS` – po przekroczeniu dłuższego progu jest oznaczany nowym statusem wygaśnięcia (dane nigdy nie były kompletne, nie ma czego wznawiać), co wymaga rozszerzenia enuma.
-    > 
-    > *Status:* Świadomie odłożone na rzecz dowiezienia kluczowej wartości biznesowej (Faza 4). Dodanie kolumny to zwykła migracja Alembika.
+  Zaprojektowane, niezaimplementowane rozwiązanie: kolumna znacznika czasu ostatniej aktywności na `tickets` oraz okresowy skan tabeli (np. przy starcie aplikacji w `lifespan`). Reakcja różni się per kategoria: `PROCESSING_RESOLUTION` NIE jest ponawiany automatycznie — status jest ustawiany przed wysyłką, więc po awarii nie wiadomo, czy e-mail wyszedł, a automatyczny retry groziłby podwójną wiadomością do klienta; skan ma jedynie wykrywać takie tickety po przekroczeniu progu i zgłaszać je do ręcznej weryfikacji. `IN_PROGRESS` po przekroczeniu dłuższego progu jest oznaczany nowym statusem wygaśnięcia (dane nigdy nie były kompletne, nie ma czego wznawiać) — wymaga rozszerzenia enuma. Świadomie odłożone na rzecz dowiezienia kluczowej wartości biznesowej (Faza 4). Dodanie kolumny to zwykła migracja Alembika.
 
-*   **Założenie jednego administratora.** System zakłada jednego admina obsługującego kolejkę. Śledzenie, kto pracuje nad którym ticketem (dodatkowa kolumna przypisania lub użycie `FOR UPDATE SKIP LOCKED` dla mechanizmu „weź następny”), pozostaje poza zakresem projektu.
+- **Założenie jednego administratora.** System zakłada jednego admina obsługującego kolejkę. Śledzenie, kto pracuje nad którym ticketem (dodatkowa kolumna przypisania lub użycie `FOR UPDATE SKIP LOCKED` dla mechanizmu „weź następny"), pozostaje poza zakresem projektu.
 ---
 
 ## 🏗️ Architektura Systemu
