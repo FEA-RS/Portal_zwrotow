@@ -48,9 +48,12 @@ target-version = "py312"
 
 
 [tool.ruff.lint]
-# E (pycodestyle), F (pyflakes), I (isort) - standardowy i bezpieczny zestaw reguł
-select = ["E", "F", "I"]
-ignore = []
+# Baza: domyślne reguły Ruffa (wersja wg uv.lock). Dodatkowo:
+# ASYNC — blokowanie, DTZ — strefy, S — bezpieczeństwo, FAST — FastAPI.
+extend-select = ["ASYNC", "DTZ", "S", "FAST"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
 
 [tool.ruff.format]
 # Wymusza standardowe formatowanie kodu (podobne do Blacka)
