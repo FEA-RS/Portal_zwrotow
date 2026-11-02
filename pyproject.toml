@@ -63,11 +63,10 @@ indent-style = "space"
 
 [tool.mypy]
 # Ustawienia statycznego typowania
+# Musi być zgodne z requires-python w [project] - mypy nie czyta tego pola.
 python_version = "3.12"
 strict = true
-warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
 
 
 
