@@ -48,9 +48,12 @@ target-version = "py312"
 
 
 [tool.ruff.lint]
-# E (pycodestyle), F (pyflakes), I (isort) - standardowy i bezpieczny zestaw reguł
-select = ["E", "F", "I"]
-ignore = []
+# Baza: domyślne reguły Ruffa (wersja wg uv.lock). Dodatkowo:
+# ASYNC — blokowanie, DTZ — strefy, S — bezpieczeństwo, FAST — FastAPI.
+extend-select = ["ASYNC", "DTZ", "S", "FAST"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
 
 [tool.ruff.format]
 # Wymusza standardowe formatowanie kodu (podobne do Blacka)
@@ -60,20 +63,11 @@ indent-style = "space"
 
 [tool.mypy]
 # Ustawienia statycznego typowania
+# Musi być zgodne z requires-python w [project] - mypy nie czyta tego pola.
 python_version = "3.12"
 strict = true
-warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
 
-# Ignorowanie brakujących typów z bibliotek trzecich
-[[tool.mypy.overrides]]
-module = [
-    "chromadb.*",
-    "langgraph.*"
-]
-ignore_missing_imports = true
 
 
 [tool.pytest.ini_options]
