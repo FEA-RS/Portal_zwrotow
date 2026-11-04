@@ -24,8 +24,9 @@ dependencies = [
     "psycopg[binary]==3.3.6",
     "psycopg-pool==3.3.3",
     "alembic==1.20.0",
-    "pydantic==2.13.5",
-    "tenacity==9.1.4"
+    "pydantic==2.14.2",
+    "tenacity==9.1.4",
+    "pydantic-settings==2.16.2",
 ]
 
 [dependency-groups]
@@ -45,18 +46,15 @@ dev = [
 # Główne ustawienia lintera i formattera
 line-length = 88
 target-version = "py312"
-exclude = [
-    ".git",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    "venv",
-]
+
 
 [tool.ruff.lint]
-# E (pycodestyle), F (pyflakes), I (isort) - standardowy i bezpieczny zestaw reguł
-select = ["E", "F", "I"]
-ignore = []
+# Baza: domyślne reguły Ruffa (wersja wg uv.lock). Dodatkowo:
+# ASYNC — blokowanie, DTZ — strefy, S — bezpieczeństwo, FAST — FastAPI.
+extend-select = ["ASYNC", "DTZ", "S", "FAST"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
 
 [tool.ruff.format]
 # Wymusza standardowe formatowanie kodu (podobne do Blacka)
@@ -66,21 +64,11 @@ indent-style = "space"
 
 [tool.mypy]
 # Ustawienia statycznego typowania
+# Musi być zgodne z requires-python w [project] - mypy nie czyta tego pola.
 python_version = "3.12"
 strict = true
-warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
 
-# Ignorowanie brakujących typów z bibliotek trzecich
-[[tool.mypy.overrides]]
-module = [
-    "asyncpg.*",
-    "chromadb.*",
-    "langgraph.*"
-]
-ignore_missing_imports = true
 
 
 [tool.pytest.ini_options]
