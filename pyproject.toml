@@ -69,6 +69,12 @@ python_version = "3.12"
 strict = true
 warn_unused_configs = true
 
+# Co robi plugin: uczy mypy, że pola BaseSettings są wczytywane ze środowiska
+# (.env, zmienne systemowe), a nie przekazywane do konstruktora.
+# Co by się stało bez niego: mypy zgłaszałby call-arg (brakujące argumenty)
+# przy DatabaseSettings().
+plugins = ["pydantic.mypy"]
+
 
 
 [tool.pytest.ini_options]
