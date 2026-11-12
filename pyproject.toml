@@ -27,6 +27,7 @@ dependencies = [
     "pydantic==2.14.2",
     "tenacity==9.1.4",
     "pydantic-settings==2.16.2",
+    "tzdata==2026.6",
 ]
 
 [dependency-groups]
@@ -68,6 +69,12 @@ indent-style = "space"
 python_version = "3.12"
 strict = true
 warn_unused_configs = true
+
+# Co robi plugin: uczy mypy, że pola BaseSettings są wczytywane ze środowiska
+# (.env, zmienne systemowe), a nie przekazywane do konstruktora.
+# Co by się stało bez niego: mypy zgłaszałby call-arg (brakujące argumenty)
+# przy DatabaseSettings().
+plugins = ["pydantic.mypy"]
 
 
 

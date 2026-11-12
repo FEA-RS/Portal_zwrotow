@@ -1,3 +1,5 @@
+from functools import cache
+
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,3 +24,9 @@ class DatabaseSettings(BaseSettings):
             "port": self.port,
             "password": self.password.get_secret_value(),
         }
+
+
+@cache
+def get_database_settings() -> DatabaseSettings:
+
+    return DatabaseSettings()
